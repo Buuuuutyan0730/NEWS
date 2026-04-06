@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- 総合メーター -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <h5 class="card-title mb-3">
+                    <i class="bi bi-speedometer2"></i> 総合メーター
+                </h5>
+                <div class="gauge-container">
+                    <div class="gauge-labels d-flex justify-content-between mb-1">
+                        <span class="text-info fw-bold">← 円高</span>
+                        <span class="text-muted">中立</span>
+                        <span class="text-danger fw-bold">円安 →</span>
+                    </div>
+                    <div class="gauge-bar">
+                        <div class="gauge-track">
+                            <div class="gauge-marker" id="gaugeMarker"></div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge fs-6" id="overallBadge">読み込み中...</span>
+                    </div>
+                </div>
+                <!-- 統計サマリー -->
+                <div class="row mt-3">
+                    <div class="col-4">
+                        <div class="stat-box">
+                            <div class="stat-number text-danger" id="yenWeakCount">-</div>
+                            <div class="stat-label">円安要因</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-box">
+                            <div class="stat-number text-warning" id="totalCount">-</div>
+                            <div class="stat-label">総ニュース数</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-box">
+                            <div class="stat-number text-info" id="yenStrongCount">-</div>
+                            <div class="stat-label">円高要因</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 経済イベント -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-calendar-event"></i> 本日の経済イベント</h6>
+                <span class="badge bg-secondary" id="eventCount">0件</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:70px">時刻</th>
+                                <th>イベント</th>
+                                <th style="width:60px" class="text-center">方向</th>
+                                <th style="width:100px" class="text-center">影響度</th>
+                                <th class="d-none d-md-table-cell">AI判定理由</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsBody">
+                            <tr><td colspan="5" class="text-center text-muted py-3">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ニュース＆X投稿 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-newspaper"></i> 最新ニュース & X投稿</h6>
+                <span class="badge bg-secondary" id="newsCount">0件</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:70px">時刻</th>
+                                <th style="width:60px">情報源</th>
+                                <th>見出し</th>
+                                <th style="width:60px" class="text-center">方向</th>
+                                <th style="width:100px" class="text-center">影響度</th>
+                                <th class="d-none d-md-table-cell">AI判定理由</th>
+                            </tr>
+                        </thead>
+                        <tbody id="newsBody">
+                            <tr><td colspan="6" class="text-center text-muted py-3">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- フッターステータス -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center text-muted small">
+            <span>
+                最終更新: <span id="lastUpdated">-</span>
+            </span>
+            <div>
+                <button class="btn btn-outline-warning btn-sm" id="refreshBtn" onclick="manualRefresh()">
+                    <i class="bi bi-arrow-clockwise"></i> 手動更新
+                </button>
+                <span class="ms-2">自動更新: <span id="nextUpdate">-</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

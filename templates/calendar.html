@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- カレンダーヘッダー -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn btn-outline-light btn-sm" onclick="changeMonth(-1)">
+                        <i class="bi bi-chevron-left"></i> 前月
+                    </button>
+                    <h4 class="mb-0" id="calendarTitle">-</h4>
+                    <button class="btn btn-outline-light btn-sm" onclick="changeMonth(1)">
+                        次月 <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- カレンダー本体 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-2">
+                <table class="calendar-table" id="calendarTable">
+                    <thead>
+                        <tr>
+                            <th class="text-danger">日</th>
+                            <th>月</th>
+                            <th>火</th>
+                            <th>水</th>
+                            <th>木</th>
+                            <th>金</th>
+                            <th class="text-info">土</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendarBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 日付詳細モーダル -->
+<div class="modal fade" id="dayModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="background-color: #21262d; color: #e0e0e0;">
+            <div class="modal-header" style="border-color: #30363d;">
+                <h5 class="modal-title" id="dayModalTitle">-</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- AIサマリー -->
+                <div class="card mb-3" id="summaryCard" style="display:none;">
+                    <div class="card-header">
+                        <i class="bi bi-robot"></i> AI 日次サマリー
+                    </div>
+                    <div class="card-body">
+                        <p id="daySummary" class="mb-0">-</p>
+                    </div>
+                </div>
+                <!-- 統計 -->
+                <div class="row mb-3" id="dayStats">
+                    <div class="col-4 text-center">
+                        <span class="text-danger fw-bold fs-4" id="dayWeakCount">-</span>
+                        <br><small class="text-muted">円安要因</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <span class="text-warning fw-bold fs-4" id="dayTotalCount">-</span>
+                        <br><small class="text-muted">総件数</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <span class="text-info fw-bold fs-4" id="dayStrongCount">-</span>
+                        <br><small class="text-muted">円高要因</small>
+                    </div>
+                </div>
+                <!-- ニュース一覧 -->
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm">
+                        <thead>
+                            <tr>
+                                <th>時刻</th>
+                                <th>情報源</th>
+                                <th>見出し</th>
+                                <th>方向</th>
+                                <th>影響度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dayNewsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentYear, currentMonth;
+const today = new Date();
+
+const SOURCE_LABELS = {
+    investing_calendar: "経済指標",
+    finnhub_calendar: "経済指標",
+    rss_yahoo: "Yahoo",
+    rss_reuters: "Reuters",
+    x_financialjuice: "X",
+    x_yahoojpfinance: "X",
+};
+
+function init() {
+    currentYear = today.getFullYear();
+    currentMonth = today.getMonth() + 1;
+    loadCalendar();
+}
+
+function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+    if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+    loadCalendar();
+}
+
+async function loadCalendar() {
+    document.getElementById("calendarTitle").textContent =
+        `${currentYear}年${currentMonth}月`;
+
+    let summaryData = [];
+    try {
+        const resp = await fetch(`/api/calendar/${currentYear}/${currentMonth}`);
+        summaryData = await resp.json();
+    } catch (e) {
+        console.error("カレンダーデータ取得エラー:", e);
+    }
+
+    // サマリーをdateでマップ化
+    const summaryMap = {};
+    summaryData.forEach(s => { summaryMap[s.date] = s; });
+
+    renderCalendar(summaryMap);
+}
+
+function renderCalendar(summaryMap) {
+    const tbody = document.getElementById("calendarBody");
+    const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    let html = "<tr>";
+
+    // 空白セル
+    for (let i = 0; i < firstDay; i++) {
+        html += '<td style="background:#161b22;"></td>';
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dayOfWeek = (firstDay + d - 1) % 7;
+        const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const summary = summaryMap[dateStr];
+
+        let cellClass = isToday ? "today" : "";
+        let indicators = "";
+
+        if (summary) {
+            const weakDots = Math.min(summary.yen_weak_count || 0, 5);
+            const strongDots = Math.min(summary.yen_strong_count || 0, 5);
+            let dots = "";
+            for (let i = 0; i < weakDots; i++) dots += '<span class="calendar-dot dot-weak"></span>';
+            for (let i = 0; i < strongDots; i++) dots += '<span class="calendar-dot dot-strong"></span>';
+            indicators = `<div class="calendar-indicators">${dots}</div>`;
+            if (summary.total_items) {
+                indicators += `<div class="small text-muted">${summary.total_items}件</div>`;
+            }
+        }
+
+        html += `<td class="${cellClass}" onclick="showDay('${dateStr}')">
+            <div class="calendar-day-num">${d}</div>
+            ${indicators}
+        </td>`;
+
+        if (dayOfWeek === 6 && d < daysInMonth) html += "</tr><tr>";
+    }
+
+    // 末尾の空白セル
+    const lastDay = (firstDay + daysInMonth - 1) % 7;
+    for (let i = lastDay + 1; i < 7; i++) {
+        html += '<td style="background:#161b22;"></td>';
+    }
+    html += "</tr>";
+
+    tbody.innerHTML = html;
+}
+
+async function showDay(dateStr) {
+    document.getElementById("dayModalTitle").textContent = dateStr;
+
+    try {
+        const resp = await fetch(`/api/daily/${dateStr}`);
+        const data = await resp.json();
+
+        // サマリー
+        const summaryCard = document.getElementById("summaryCard");
+        if (data.summary && data.summary.summary) {
+            document.getElementById("daySummary").textContent = data.summary.summary;
+            summaryCard.style.display = "block";
+        } else {
+            summaryCard.style.display = "none";
+        }
+
+        // 統計
+        const news = data.news || [];
+        const weak = news.filter(n => n.direction === "円安").length;
+        const strong = news.filter(n => n.direction === "円高").length;
+        document.getElementById("dayWeakCount").textContent = weak;
+        document.getElementById("dayStrongCount").textContent = strong;
+        document.getElementById("dayTotalCount").textContent = news.length;
+
+        // ニュース一覧
+        const tbody = document.getElementById("dayNewsBody");
+        if (news.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">データなし</td></tr>';
+        } else {
+            tbody.innerHTML = news.map(n => {
+                const time = (n.published_at || n.fetched_at || "").substring(11, 16) || "-";
+                const src = SOURCE_LABELS[n.source] || n.source;
+                const dir = n.direction === "円安" ? '<span class="text-danger">円安↗</span>'
+                          : n.direction === "円高" ? '<span class="text-info">円高↘</span>'
+                          : '<span class="text-muted">中立</span>';
+                const impact = n.impact ? "★".repeat(n.impact) + "☆".repeat(5 - n.impact) : "-";
+                const title = n.url
+                    ? `<a href="${n.url}" target="_blank" class="news-link">${escHtml(n.title)}</a>`
+                    : escHtml(n.title);
+                return `<tr><td>${time}</td><td>${src}</td><td>${title}</td><td>${dir}</td><td>${impact}</td></tr>`;
+            }).join("");
+        }
+
+    } catch (e) {
+        console.error("日次データ取得エラー:", e);
+    }
+
+    new bootstrap.Modal(document.getElementById("dayModal")).show();
+}
+
+function escHtml(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+{% endblock %}

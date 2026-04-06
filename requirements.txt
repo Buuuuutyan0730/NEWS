@@ -1,0 +1,7 @@
+Flask==3.1.0
+atoma==0.0.17
+requests==2.32.3
+beautifulsoup4==4.13.3
+lxml==5.3.1
+google-genai==1.14.0
+APScheduler==3.11.0

@@ -1,0 +1,217 @@
+/* FX分析ツール カスタムCSS */
+body {
+    background-color: #1a1d23;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.navbar {
+    background-color: #0d1117 !important;
+    border-bottom: 1px solid #30363d;
+}
+
+.card {
+    background-color: #21262d;
+    border: 1px solid #30363d;
+}
+
+.card-header {
+    background-color: #161b22;
+    border-bottom: 1px solid #30363d;
+    color: #e0e0e0;
+}
+
+.table {
+    color: #e0e0e0;
+}
+
+.table-dark {
+    --bs-table-bg: #161b22;
+    --bs-table-border-color: #30363d;
+}
+
+/* ゲージメーター */
+.gauge-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.gauge-track {
+    position: relative;
+    height: 24px;
+    border-radius: 12px;
+    background: linear-gradient(to right,
+        #0dcaf0 0%,
+        #0dcaf0 20%,
+        #6c757d 45%,
+        #6c757d 55%,
+        #dc3545 80%,
+        #dc3545 100%
+    );
+    overflow: visible;
+}
+
+.gauge-marker {
+    position: absolute;
+    top: -4px;
+    width: 8px;
+    height: 32px;
+    background: #fff;
+    border: 2px solid #000;
+    border-radius: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* 統計ボックス */
+.stat-box {
+    padding: 8px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #8b949e;
+}
+
+/* 影響度バー */
+.impact-bar {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.impact-bar .bar-segment {
+    width: 14px;
+    height: 16px;
+    border-radius: 2px;
+    background-color: #30363d;
+}
+
+.impact-bar .bar-segment.active-low {
+    background-color: #238636;
+}
+.impact-bar .bar-segment.active-mid {
+    background-color: #d29922;
+}
+.impact-bar .bar-segment.active-high {
+    background-color: #f85149;
+}
+
+/* 方向バッジ */
+.direction-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.direction-yen-weak {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #f85149;
+}
+
+.direction-yen-strong {
+    background-color: rgba(13, 202, 240, 0.2);
+    color: #58d5f0;
+}
+
+.direction-neutral {
+    background-color: rgba(108, 117, 125, 0.2);
+    color: #8b949e;
+}
+
+/* ソースバッジ */
+.source-badge {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.source-investing { background-color: #1a472a; color: #3fb950; }
+.source-rss { background-color: #1a3a4a; color: #58a6ff; }
+.source-x { background-color: #2d2d2d; color: #e0e0e0; }
+
+/* テーブル行ホバー */
+.table-dark.table-hover > tbody > tr:hover {
+    background-color: #292e36;
+}
+
+/* スマホ対応 */
+@media (max-width: 768px) {
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    body {
+        font-size: 13px;
+    }
+    .gauge-container {
+        max-width: 100%;
+    }
+}
+
+/* リンクスタイル */
+a.news-link {
+    color: #e0e0e0;
+    text-decoration: none;
+}
+a.news-link:hover {
+    color: #58a6ff;
+    text-decoration: underline;
+}
+
+/* カレンダー */
+.calendar-table {
+    width: 100%;
+}
+
+.calendar-table th {
+    text-align: center;
+    padding: 8px;
+    background-color: #161b22;
+}
+
+.calendar-table td {
+    text-align: center;
+    padding: 10px 5px;
+    border: 1px solid #30363d;
+    cursor: pointer;
+    vertical-align: top;
+    height: 80px;
+}
+
+.calendar-table td:hover {
+    background-color: #292e36;
+}
+
+.calendar-table td.today {
+    border: 2px solid #58a6ff;
+}
+
+.calendar-day-num {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.calendar-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.calendar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-weak { background-color: #f85149; }
+.dot-strong { background-color: #58d5f0; }
