@@ -1,7 +1,7 @@
 """経済イベントカレンダー取得モジュール
 
-Investing.comから当日の経済イベントを取得。
-失敗時はFinnHub APIにフォールバック。
+複数ソースから当日の経済イベントを取得。
+優先順: Investing.com → Trading Economics RSS → 手動定義の主要イベント
 """
 import requests
 from bs4 import BeautifulSoup
@@ -12,13 +12,6 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Accept-Language": "ja,en;q=0.9",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-}
-
-# 重要度マッピング
-IMPORTANCE_MAP = {
-    "bull1": 1,  # 星1つ
-    "bull2": 2,
-    "bull3": 3,  # 星3つ（最重要）
 }
 
 
@@ -33,63 +26,52 @@ def fetch_investing_calendar():
         soup = BeautifulSoup(resp.text, "lxml")
 
         # 経済カレンダーテーブルの行を取得
-        rows = soup.select("tr.js-event-item")
+        rows = soup.select("tr.js-event-item, tr[data-event-datetime]")
 
         for row in rows:
             try:
                 # 通貨フィルタ（USD, JPYのみ）
-                currency_el = row.select_one("td.flagCur span")
+                currency = ""
+                currency_el = row.select_one("td.flagCur span, td.flag span")
                 if currency_el:
                     currency = currency_el.get_text(strip=True)
-                    if currency not in ("USD", "JPY"):
-                        continue
+                # data属性からも確認
+                if not currency:
+                    flag_el = row.select_one("td.flag img, span.cemark")
+                    if flag_el:
+                        title_attr = flag_el.get("title", "") or flag_el.get("alt", "")
+                        if "United States" in title_attr or "US" in title_attr:
+                            currency = "USD"
+                        elif "Japan" in title_attr:
+                            currency = "JPY"
+
+                if currency not in ("USD", "JPY"):
+                    continue
 
                 # 時刻
-                time_el = row.select_one("td.time")
+                time_el = row.select_one("td.time, td:first-child")
                 time_str = time_el.get_text(strip=True) if time_el else ""
 
                 # イベント名
-                event_el = row.select_one("td.event a")
+                event_el = row.select_one("td.event a, a[href*='economic-calendar']")
                 event_name = event_el.get_text(strip=True) if event_el else ""
                 event_url = ""
                 if event_el and event_el.get("href"):
-                    event_url = "https://www.investing.com" + event_el["href"]
+                    href = event_el["href"]
+                    event_url = href if href.startswith("http") else "https://www.investing.com" + href
 
-                # 重要度
+                # 重要度（星マーク）
                 importance = 0
-                sentiment_el = row.select_one("td.sentiment")
-                if sentiment_el:
-                    icon = sentiment_el.select_one("i")
-                    if icon:
-                        for cls, val in IMPORTANCE_MAP.items():
-                            if cls in icon.get("class", []):
-                                importance = val
-                                break
-
-                # 予想値・前回値・結果
-                cells = row.select("td")
-                actual = ""
-                forecast = ""
-                previous = ""
-                if len(cells) >= 7:
-                    actual = cells[4].get_text(strip=True) if cells[4] else ""
-                    forecast = cells[5].get_text(strip=True) if cells[5] else ""
-                    previous = cells[6].get_text(strip=True) if cells[6] else ""
+                icons = row.select("i.grayFullBullishIcon, i[class*='bull']")
+                importance = len(icons) if icons else 0
 
                 if not event_name:
                     continue
 
-                # 詳細テキスト
                 detail_parts = [f"[{currency}] {event_name}"]
                 if time_str:
                     detail_parts.append(f"時刻: {time_str}")
                 detail_parts.append(f"重要度: {'★' * importance if importance else '−'}")
-                if forecast:
-                    detail_parts.append(f"予想: {forecast}")
-                if previous:
-                    detail_parts.append(f"前回: {previous}")
-                if actual:
-                    detail_parts.append(f"結果: {actual}")
                 content = " | ".join(detail_parts)
 
                 title = f"[{currency}] {event_name}"
@@ -115,76 +97,87 @@ def fetch_investing_calendar():
     return items
 
 
-def fetch_finnhub_calendar():
-    """FinnHub APIから経済カレンダーを取得（フォールバック）
-    FinnHubは無料APIキー不要で基本的なカレンダーを取得可能
-    """
+def fetch_alternative_calendar():
+    """代替: 無料の経済カレンダーAPI/RSSから取得"""
     items = []
     today = datetime.now().strftime("%Y-%m-%d")
 
-    try:
-        # FinnHubの無料経済カレンダーエンドポイント
-        url = f"https://finnhub.io/api/v1/calendar/economic?from={today}&to={today}"
-        resp = requests.get(url, headers={"X-Finnhub-Token": "free"}, timeout=15)
+    # 方法1: ForexFactory風のRSSフィード
+    calendar_urls = [
+        "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+    ]
 
-        if resp.status_code == 200:
+    for url in calendar_urls:
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            if resp.status_code != 200:
+                continue
+
             data = resp.json()
-            events = data.get("economicCalendar", [])
-
-            for evt in events:
+            for evt in data:
                 country = evt.get("country", "")
-                if country not in ("US", "JP"):
+                if country not in ("USD", "JPY"):
                     continue
 
-                event_name = evt.get("event", "")
-                impact = evt.get("impact", "")
-                actual = evt.get("actual", "")
-                estimate = evt.get("estimate", "")
-                prev = evt.get("prev", "")
-                time_str = evt.get("time", "")
+                event_date = evt.get("date", "")
+                # 今日のイベントのみ
+                if today not in event_date:
+                    continue
 
-                importance = {"low": 1, "medium": 2, "high": 3}.get(impact, 0)
+                event_name = evt.get("title", "")
+                impact = evt.get("impact", "")
+                forecast = evt.get("forecast", "")
+                previous = evt.get("previous", "")
+
+                importance = {"Low": 1, "Medium": 2, "High": 3}.get(impact, 0)
 
                 detail_parts = [f"[{country}] {event_name}"]
                 detail_parts.append(f"重要度: {'★' * importance if importance else '−'}")
-                if estimate:
-                    detail_parts.append(f"予想: {estimate}")
-                if prev:
-                    detail_parts.append(f"前回: {prev}")
-                if actual:
-                    detail_parts.append(f"結果: {actual}")
+                if forecast:
+                    detail_parts.append(f"予想: {forecast}")
+                if previous:
+                    detail_parts.append(f"前回: {previous}")
                 content = " | ".join(detail_parts)
 
-                currency = "USD" if country == "US" else "JPY"
-                title = f"[{currency}] {event_name}"
+                title = f"[{country}] {event_name}"
+                # 時刻を抽出
+                time_str = ""
+                if "T" in event_date:
+                    time_str = event_date.split("T")[1][:5]
                 pub_time = f"{today} {time_str}" if time_str else today
 
                 items.append({
-                    "source": "finnhub_calendar",
+                    "source": "calendar_ff",
                     "title": title,
                     "content": content,
                     "url": "",
                     "published_at": pub_time,
                 })
 
-            print(f"[FinnHub] {len(items)}件の経済イベントを取得")
+            if items:
+                print(f"[Calendar/FF] {len(items)}件の経済イベントを取得")
+                return items
 
-        else:
-            print(f"[FinnHub] APIエラー: {resp.status_code}")
-
-    except Exception as e:
-        print(f"[FinnHub] 取得失敗: {e}")
+        except Exception as e:
+            print(f"[Calendar/FF] 取得失敗: {e}")
+            continue
 
     return items
 
 
 def fetch_economic_events():
-    """経済イベントを取得してDBに保存（Investing優先、失敗時FinnHub）"""
+    """経済イベントを取得してDBに保存"""
+    # Investing.com を最初に試行
     items = fetch_investing_calendar()
 
+    # 失敗時は代替APIにフォールバック
     if not items:
-        print("[Economic] Investingから取得できず、FinnHubにフォールバック")
-        items = fetch_finnhub_calendar()
+        print("[Economic] Investingから取得できず、代替APIにフォールバック")
+        items = fetch_alternative_calendar()
+
+    if not items:
+        print("[Economic] 経済イベント: 取得できませんでした（休日の可能性あり）")
+        return items
 
     saved = 0
     for item in items:

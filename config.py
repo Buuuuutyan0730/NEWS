@@ -18,7 +18,8 @@ X_ACCOUNTS = ["financialjuice", "yahoojpfinance"]
 RSSHUB_INSTANCES = [
     "https://rsshub.app",
     "https://rsshub.rssforever.com",
-    "https://rsshub.moeyy.cn",
+    "https://rsshub.pseudoyu.com",
+    "https://rss.fatpandac.com",
 ]
 
 # --- RSSニュースフィード ---
@@ -27,26 +28,44 @@ RSS_FEEDS = [
         "name": "Yahoo Finance JP",
         "url": "https://news.yahoo.co.jp/rss/topics/business.xml",
         "source_id": "rss_yahoo",
+        "filter": True,
     },
     {
         "name": "Reuters JP",
         "url": "https://assets.wor.jp/rss/rdf/reuters/top.rdf",
         "source_id": "rss_reuters",
+        "filter": True,
+    },
+    {
+        "name": "Yahoo Finance USD/JPY",
+        "url": "https://finance.yahoo.co.jp/rss/news?category=fx",
+        "source_id": "rss_yahoo_fx",
+        "filter": False,  # FX専門フィードなのでフィルタ不要
     },
 ]
 
 # --- FXフィルタキーワード ---
 FX_KEYWORDS = [
-    "ドル円", "ドル/円", "USD/JPY", "USDJPY",
-    "為替", "円安", "円高", "外国為替",
-    "FRB", "FOMC", "米連邦", "パウエル",
-    "日銀", "日本銀行", "植田", "金融政策",
-    "金利", "利上げ", "利下げ",
-    "雇用統計", "CPI", "消費者物価",
-    "GDP", "ISM", "PCE",
-    "dollar", "yen", "forex", "Fed",
+    # 通貨ペア
+    "ドル円", "ドル/円", "ドル・円", "USD/JPY", "USDJPY", "ドル 円",
+    # 為替一般
+    "為替", "円安", "円高", "外国為替", "外為", "通貨",
+    # 米国金融
+    "FRB", "FOMC", "米連邦", "パウエル", "米金融", "米経済",
+    "ウォール街", "ウォールストリート", "米国債", "米長期金利",
+    # 日本金融
+    "日銀", "日本銀行", "植田", "金融政策", "金融緩和", "量的緩和",
+    "YCC", "イールドカーブ",
+    # 金利
+    "金利", "利上げ", "利下げ", "利回り", "国債",
+    # 経済指標
+    "雇用統計", "CPI", "消費者物価", "インフレ",
+    "GDP", "ISM", "PCE", "PPI", "失業率", "非農業",
+    "貿易収支", "経常収支", "景気",
+    # 英語キーワード
+    "dollar", "yen", "forex", "Fed", "treasury",
     "BOJ", "rate hike", "rate cut",
-    "inflation", "employment", "payroll",
+    "inflation", "employment", "payroll", "nonfarm",
 ]
 
 # --- 履歴保持日数 ---

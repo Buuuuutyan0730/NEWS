@@ -16,9 +16,10 @@ HEADERS = {
 
 # Nitter公開インスタンス（生存状況により変動）
 NITTER_INSTANCES = [
-    "https://nitter.privacydev.net",
     "https://nitter.poast.org",
-    "https://nitter.woodland.cafe",
+    "https://nitter.privacydev.net",
+    "https://nitter.1d4.us",
+    "https://nitter.kavin.rocks",
 ]
 
 

@@ -115,14 +115,16 @@ def fetch_rss_news():
         name = feed_conf["name"]
         url = feed_conf["url"]
         source_id = feed_conf["source_id"]
+        needs_filter = feed_conf.get("filter", True)
 
         items = _parse_rss(url)
         print(f"[RSS] {name}: {len(items)}件取得")
 
         for item in items:
-            combined_text = f"{item['title']} {item['content']}"
-            if not _matches_keywords(combined_text):
-                continue
+            if needs_filter:
+                combined_text = f"{item['title']} {item['content']}"
+                if not _matches_keywords(combined_text):
+                    continue
 
             # HTMLタグ除去（簡易）
             from bs4 import BeautifulSoup
