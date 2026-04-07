@@ -37,9 +37,9 @@ RSS_FEEDS = [
         "filter": True,
     },
     {
-        "name": "Bloomberg JP",
-        "url": "https://www.bloomberg.co.jp/feeds/sitemap_news.xml",
-        "source_id": "rss_bloomberg",
+        "name": "NHK Business",
+        "url": "https://www.nhk.or.jp/rss/news/cat5.xml",
+        "source_id": "rss_nhk",
         "filter": True,
     },
 ]

@@ -80,6 +80,10 @@ def analyze_single(text, client=None):
         print(f"[Gemini] JSON解析エラー: {e}")
         return None
     except Exception as e:
+        error_str = str(e)
+        if "503" in error_str or "UNAVAILABLE" in error_str or "429" in error_str:
+            print(f"[Gemini] 一時エラー（リトライ対象）: {e}")
+            return "RETRY"
         print(f"[Gemini] 分析エラー: {e}")
         return None
 
@@ -96,11 +100,25 @@ def analyze_unprocessed():
         return 0
 
     analyzed_count = 0
+    retry_count = 0
+    max_retries = 3
+
     for item in items:
         text = f"{item['title']}\n{item.get('content', '')}"
-        result = analyze_single(text, client)
 
-        if result:
+        result = None
+        for attempt in range(max_retries):
+            result = analyze_single(text, client)
+            if result == "RETRY":
+                retry_count += 1
+                wait = 10 * (attempt + 1)
+                print(f"[Gemini] {wait}秒後にリトライ... ({attempt+1}/{max_retries})")
+                time.sleep(wait)
+                result = None
+                continue
+            break
+
+        if result and result != "RETRY":
             update_analysis(
                 item["id"],
                 result["direction"],
@@ -110,9 +128,8 @@ def analyze_unprocessed():
             analyzed_count += 1
             print(f"  [{result['direction']}|{result['impact']}] {item['title'][:50]}")
         else:
-            # 分析失敗時は中立・影響1としてマーク（再試行防止）
-            update_analysis(item["id"], "中立", 1, "分析失敗")
-            analyzed_count += 1
+            # 分析失敗時はスキップ（次回再試行される）
+            print(f"  [スキップ] {item['title'][:50]}")
 
         # レートリミット対策（無料枠: 15 RPM）
         time.sleep(4.5)
