@@ -37,10 +37,10 @@ RSS_FEEDS = [
         "filter": True,
     },
     {
-        "name": "Yahoo Finance USD/JPY",
-        "url": "https://finance.yahoo.co.jp/rss/news?category=fx",
-        "source_id": "rss_yahoo_fx",
-        "filter": False,  # FX専門フィードなのでフィルタ不要
+        "name": "Bloomberg JP",
+        "url": "https://www.bloomberg.co.jp/feeds/sitemap_news.xml",
+        "source_id": "rss_bloomberg",
+        "filter": True,
     },
 ]
 

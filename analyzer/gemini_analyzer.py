@@ -46,7 +46,7 @@ def analyze_single(text, client=None):
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
         )
 
@@ -150,7 +150,7 @@ def generate_daily_summary(news_items):
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
         )
         return response.text.strip()[:500]
